@@ -1,0 +1,372 @@
+{
+  "name": "Daily Economic News Agent to Google Sheets",
+  "nodes": [
+    {
+      "parameters": {
+        "triggerTimes": {
+          "item": [
+            {
+              "hour": 9
+            }
+          ]
+        }
+      },
+      "name": "Cron Trigger: 9 AM Daily",
+      "type": "n8n-nodes-base.cron",
+      "typeVersion": 1,
+      "position": [
+        -208,
+        -320
+      ],
+      "id": "0ac11857-ec51-4b02-835a-db1e2f161053"
+    },
+    {
+      "parameters": {
+        "jsCode": "// AI의 출력값 가져오기 (output 혹은 text 필드 확인)\n// Critic Agent의 결과는 보통 $json.output에 담깁니다.\nconst rawResult = $json.output || $json.text || $json.response || \"\";\n\nlet parsedJson = [];\n\ntry {\n  // === 1단계: 문자열 확보 및 전처리 ===\n  let cleanString = \"\";\n\n  if (typeof rawResult === 'object') {\n    // 만약 운 좋게 이미 객체라면 바로 사용\n    parsedJson = Array.isArray(rawResult) ? rawResult : [rawResult];\n  } else {\n    // 문자열이라면 처리 시작\n    cleanString = rawResult.toString();\n    \n    // === 2단계: JSON 추출 (외과 수술) ===\n    // 대괄호 [ 로 시작해서 ] 로 끝나는 패턴을 찾습니다.\n    // 앞뒤에 붙은 \"Here is the code...\" 같은 사족을 무시합니다.\n    const jsonMatch = cleanString.match(/\\[[\\s\\S]*\\]/);\n    \n    if (jsonMatch) {\n      cleanString = jsonMatch[0]; // 매칭된 JSON 부분만 추출\n    } else {\n      // 대괄호가 없다면 객체 {} 형태일 수도 있으니 시도\n      const objMatch = cleanString.match(/\\{[\\s\\S]*\\}/);\n      if (objMatch) {\n        cleanString = \"[\" + objMatch[0] + \"]\"; // 배열로 강제 변환\n      } else {\n        throw new Error(\"JSON 형식을 찾을 수 없습니다.\");\n      }\n    }\n\n    // === 3단계: 파싱 ===\n    parsedJson = JSON.parse(cleanString);\n  }\n\n} catch (error) {\n  // 에러 발생 시 워크플로우를 멈추지 않고 에러 로그를 반환하도록 처리\n  return [{\n    json: {\n      error: \"JSON 파싱 실패\",\n      message: error.message,\n      raw_data: rawResult // 무엇 때문에 에러났는지 원본 확인용\n    }\n  }];\n}\n\n// === 4단계: 데이터 매핑 (Google Sheets 포맷 맞추기) ===\n// 파싱된 데이터가 배열이 아니면 배열로 변환\nif (!Array.isArray(parsedJson)) {\n  parsedJson = [parsedJson];\n}\n\nreturn parsedJson.map(item => {\n  // 용어(terms) 배열 안전하게 처리\n  const terms = Array.isArray(item.terms) ? item.terms : [];\n  \n  // 용어 1~5 안전하게 매핑 (없으면 빈칸)\n  const term1 = terms[0] || {};\n  const term2 = terms[1] || {};\n  const term3 = terms[2] || {};\n  const term4 = terms[3] || {};\n  const term5 = terms[4] || {};\n  \n  return {\n    json: {\n      title: item.title || '제목 없음',\n      date: item.date || new Date().toISOString().split('T')[0],\n      source_url: item.source_url || '링크 없음',\n      // 요약문에서 불필요한 줄바꿈 제거\n      summary: (item.summary || '').replace(/\\n/g, ' '),\n      key_metrics: item.key_metrics || '지표 없음',\n      \n      // 용어 매핑 (빈 값일 경우 에러 방지)\n      term1_name: term1.term || '',\n      term1_definition: term1.definition || '',\n      term1_explanation: term1.explanation || '',\n      \n      term2_name: term2.term || '',\n      term2_definition: term2.definition || '',\n      term2_explanation: term2.explanation || '',\n      \n      term3_name: term3.term || '',\n      term3_definition: term3.definition || '',\n      term3_explanation: term3.explanation || '',\n      \n      term4_name: term4.term || '',\n      term4_definition: term4.definition || '',\n      term4_explanation: term4.explanation || '',\n      \n      term5_name: term5.term || '',\n      term5_definition: term5.definition || '',\n      term5_explanation: term5.explanation || '',\n      \n      created_at: new Date().toISOString()\n    }\n  };\n});"
+      },
+      "name": "Code: Prepare Data for Sheet",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [
+        608,
+        -96
+      ],
+      "id": "20da61eb-02bf-4220-8a5a-37b05585429e",
+      "alwaysOutputData": false
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "sheetId": "1PbiJiUvgA7YBMATngEgeJK3efGz5f57ZLocisG1bWOQ",
+        "range": "뉴스정리!A:U",
+        "options": {
+          "usePathForKeyRow": true
+        }
+      },
+      "name": "Google Sheets: Add Data",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 2,
+      "position": [
+        608,
+        80
+      ],
+      "id": "77b8fd54-3f44-4c62-964d-347a2668f65e",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "JNCipej7yrOZFQaU",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "==다음의 Perplexity AI 경제 뉴스 결과를 분석해서, 정확히 1건의 뉴스를 JSON 배열 형식으로 출력해주세요.\n\n**입력 데이터**: {{ $json.choices[0].message.content }}\n**오늘 날짜**: {{ $now.format('yyyy-MM-dd') }}\n\n각 뉴스마다 다음을 포함 (JSON Key 준수):\n1. title: 뉴스 제목\n2. date: 날짜 (YYYY-MM-DD 형식) -> **중요: 날짜가 {{ $now.minus(100, 'days').format('yyyy-MM-dd') }} 이전이라면 해당 뉴스는 버리고 빈 배열 []을 출력하세요.**\n3. source_url: 기사의 원문 링크 (URL) -> 반드시 포함할 것\n4. summary: 핵심 내용 3-5줄 요약\n5. key_metrics: 중요 지표나 숫자\n6. terms: 경제 용어 객체 2개가 담긴 배열 (term, definition, explanation 포함)\n\n**출력 형식 예시**:\n[\n  {\n    \"title\": \"...\",\n    \"date\": \"2025-11-27\",\n    \"source_url\": \"https://news.naver.com/...\",\n    \"summary\": \"...\",\n    \"key_metrics\": \"...\",\n    \"terms\": [ ... ]\n  }\n]\n\n**중요**: \n- source_url 필드를 반드시 포함하세요.",
+        "hasOutputParser": true,
+        "options": {
+          "systemMessage": "당신은 경제 초보자를 위한 경제 뉴스 분석 전문가입니다. 복잡한 경제 기사를 쉽게 풀어서 설명하고, 이해를 돕는 초보자도 이해할 수 있는 예시와 함께 설명합니다. 완전 정확하고 재채운 경문을 언급하며, 주어진 출력 경석을 엄격히 따릅니다. JSON 출력시 반드시 유효한 JSON 형식을 사용하고, 각 뉴스마다 관련된 2가의 용어를 포함시킵니다."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3,
+      "position": [
+        -240,
+        -80
+      ],
+      "id": "3c59ea65-3626-47b0-bb46-262609f80867",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        -240,
+        192
+      ],
+      "id": "e4289283-03e4-4044-b4a4-d25b41329f90",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "gndEkl9rPh0IuA3t",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1PbiJiUvgA7YBMATngEgeJK3efGz5f57ZLocisG1bWOQ",
+          "mode": "list",
+          "cachedResultName": "n8n경제뉴스",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1PbiJiUvgA7YBMATngEgeJK3efGz5f57ZLocisG1bWOQ/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "뉴스정리",
+          "mode": "name"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -16,
+        -320
+      ],
+      "id": "70645668-0ae3-4d71-a603-eb4e02c7d648",
+      "name": "Get row(s) in sheet",
+      "alwaysOutputData": true,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "JNCipej7yrOZFQaU",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Google Sheets에서 가져온 전체 데이터 읽기\nconst items = $input.all();\n\n// === 설정 영역 ===\n// 중복 검사를 위해 뒤에서부터 몇 개의 데이터를 확인할지 설정합니다.\n// 15개 정도면 최근 며칠 간의 뉴스를 커버하므로 충분합니다.\nconst CHECK_LIMIT = 15; \n// =================\n\nlet recentTitles = [];\n\n// 데이터가 없으면 빈 값 반환\nif (items.length === 0) {\n  return [{ json: { excluded_titles: \"없음\" } }];\n}\n\n// 전체 데이터 중 '가장 최근(뒤쪽)' 데이터 N개만 잘라냅니다. (Sliding Window 기법)\n// 배열의 끝에서부터 CHECK_LIMIT 만큼만 가져옵니다.\nconst recentItems = items.slice(-CHECK_LIMIT);\n\n// 잘라낸 최근 데이터에서 제목만 추출\nrecentItems.forEach(item => {\n  const json = item.json;\n  if(json.title) {\n    recentTitles.push(json.title);\n  }\n});\n\n// Perplexity가 인식하기 좋게 따옴표로 감싸고 쉼표로 구분\n// 예: \"제목1\", \"제목2\", \"제목3\"\n  const uniqueTitles = recentTitles.join(\", \");\n// 'excluded_words'(용어)는 뉴스 중복 선정과 무관하므로 토큰 절약을 위해 제거했습니다.\n// 오직 'excluded_titles'만 다음 노드로 넘깁니다.\nreturn [{ \n  json: { \n    excluded_titles: uniqueTitles \n  } \n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        176,
+        -320
+      ],
+      "id": "cb6edee2-beb4-4114-827f-d4d602c00f4f",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        112,
+        176
+      ],
+      "id": "e2b7a455-6005-4f79-b250-bc3975904dc8",
+      "name": "Google Gemini Chat Model1",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "gndEkl9rPh0IuA3t",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "===당신은 꼼꼼한 '경제 뉴스 편집장'이자 '데이터 검수자'입니다. \n이전 단계의 AI가 작성한 경제 뉴스 JSON 데이터를 검토하고 수정해야 합니다.\n\n**입력 데이터**: \n{{ $json.output }}\n\n**수행해야 할 작업**:\n1. **내용 검증**: 각 뉴스의 요약이 핵심을 찌르고 있는지, 'key_metrics'에 숫자가 정확한지 확인하세요.\n2. **용어 설명(Terms) 심사**: 설명이 초보자에게 너무 어렵거나 부정확하면, 더 쉽고 정확하게 수정하세요.\n3. **★수량 강제 맞춤 (가장 중요)★**: \n   - 'terms' 배열 안에 용어가 정확히 **2개**인지 세어보세요.\n   - 만약 1개 이하라면, 뉴스 내용과 관련된 경제 용어를 당신이 직접 생성하여 추가하세요.\n   - 만약 3개 이상이라면, 가장 덜 중요한 것을 삭제하여 2개로 맞추세요.\n   - **결과물은 무조건 용어 2개여야 합니다.**\n\n**⚠️ 절대 준수 규칙 (어길 시 시스템 오류 발생) ⚠️**:\n1. **데이터 보존 필수**: 입력받은 데이터에 뉴스 기사가 1개라면, 출력도 반드시 1개여야 합니다. \n2. **구조 유지**: JSON의 키(key)나 구조를 변경하지 마세요. \n3. **순수 JSON**: Markdown 코드 블록(```json) 없이 순수한 JSON 텍스트만 출력하세요.\n\"마크다운 백틱 없이 순수한 JSON 배열 데이터만 출력하세요. 다른 설명은 절대 붙이지 마세요.\"\n(중요: 출력은 반드시 '[' 로 시작하고 ']'로 끝나야 합니다. '여기 결과입니다' 같은 말은 절대 하지 마세요.)",
+        "hasOutputParser": true,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3,
+      "position": [
+        112,
+        -80
+      ],
+      "id": "fbb83ce7-5bbf-4e24-a1e2-1d745f9d73d4",
+      "name": "critic agent"
+    },
+    {
+      "parameters": {
+        "resource": "databasePage",
+        "databaseId": {
+          "__rl": true,
+          "value": "2b716d8a-25fa-8075-8895-c4fae99c4ab8",
+          "mode": "list",
+          "cachedResultName": "📰 경제 뉴스 브리핑",
+          "cachedResultUrl": "https://www.notion.so/2b716d8a25fa80758895c4fae99c4ab8"
+        },
+        "title": "={{ $json.title }}",
+        "propertiesUi": {
+          "propertyValues": [
+            {
+              "key": "날짜|date",
+              "date": "={{ $json.date }}"
+            }
+          ]
+        },
+        "blockUi": {
+          "blockValues": [
+            {
+              "textContent": "={{ \n\"**🗞️ 오늘의 브리핑 (\" + $json.date + \")**\\n\\n\" +\n\n\"**⚡ 3줄 요약**\\n\" +\n$json.summary + \"\\n\\n\" +\n\n\"**📊 시장 핵심 지표**\\n\" +\n\"> \" + $json.key_metrics + \"\\n\\n\" +\n\n\"---\\n\" +\n\"**🧠 오늘의 경제 지식**\\n\\n\" +\n\n\"**① \" + $json.term1_name + \"**\\n\" +\n\"└ 📘 \" + $json.term1_definition + \"\\n\" +\n\"└ 💡 \" + $json.term1_explanation + \"\\n\\n\" +\n\n\"**② \" + $json.term2_name + \"**\\n\" +\n\"└ 📘 \" + $json.term2_definition + \"\\n\" +\n\"└ 💡 \" + $json.term2_explanation + \"\\n\\n\" +\n\n\"🔗 [기사 원문 보기](\" + $json.source_url + \")\"\n\"---\\n\" +\n\"🤖 *AI Agent가 정리한 경제 뉴스입니다.*\"\n}}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "7b86577a-11f9-4883-af17-d6fc3ace3358",
+      "name": "Notion: Create Gallery Card",
+      "type": "n8n-nodes-base.notion",
+      "typeVersion": 2.1,
+      "position": [
+        608,
+        240
+      ],
+      "credentials": {
+        "notionApi": {
+          "id": "UEUWVitwjVhfCRQ8",
+          "name": "Notion account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.perplexity.ai/chat/completions",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBearerAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"model\": \"sonar-pro\",\n  \"messages\": [\n    {\n      \"role\": \"system\",\n      \"content\": \"당신은 경제 뉴스 전문 분석가입니다. 최신 경제 뉴스를 정확하고 상세하게 제공합니다.\"\n    },\n    {\n      \"role\": \"user\",\n      \"content\": \"오늘 또는 최근 3일 이내의 주요 경제 뉴스 1건을 찾아서 각 뉴스마다 다음 정보를 포함해서 자세히 알려주세요:\\n\\n1. 뉴스 제목\\n2. 정확한 날짜\\n3. 핵심 내용 (3-5줄 분량)\\n4. 주요 경제 지표나 숫자 (금리, 주가, 환율 등)\\n5. 뉴스에 나오는 경제 초보자가 모를만한 전문 용어 2개와 각 용어의 의미\\n\\n[중복 방지 요청]\\n다음 뉴스 제목들은 이미 데이터베이스에 있습니다. 이 내용들과 겹치지 않는 새로운 뉴스를 찾아주세요:\\n{{ $('Code in JavaScript').first().json.excluded_titles }}\\n\\n반드시 위 목록에 없는 새로운 뉴스 1건을 제공해주세요.\"\n    }\n  ],\n  \"max_tokens\": 3000,\n  \"temperature\": 0.2\n}",
+        "options": {}
+      },
+      "name": "Perplexity AI: Fetch 1 News",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [
+        384,
+        -320
+      ],
+      "id": "e854b6fb-bb7b-4100-bf80-e1cb20db13aa",
+      "credentials": {
+        "httpBearerAuth": {
+          "id": "H9XmR62z2EIU7Nvq",
+          "name": "Bearer Auth account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Cron Trigger: 9 AM Daily": {
+      "main": [
+        [
+          {
+            "node": "Get row(s) in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code: Prepare Data for Sheet": {
+      "main": [
+        [
+          {
+            "node": "Google Sheets: Add Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "critic agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get row(s) in sheet": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Perplexity AI: Fetch 1 News",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "critic agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "critic agent": {
+      "main": [
+        [
+          {
+            "node": "Code: Prepare Data for Sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Sheets: Add Data": {
+      "main": [
+        [
+          {
+            "node": "Notion: Create Gallery Card",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Perplexity AI: Fetch 1 News": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "004666b3-e6ca-419f-8526-6a4b207359bb",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "2c5c4b763aac75ac86c0599c7a52b2a17496ca308aec82eacfb616d1d76d0267"
+  },
+  "id": "WJA3jQn05ce56WP4",
+  "tags": []
+}

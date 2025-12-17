@@ -1,0 +1,86 @@
+// Prisma 스키마: DB 테이블 정의
+
+// 데이터베이스: PostgreSQL
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ORM 생성기
+generator client {
+  provider = "prisma-client-js"
+}
+
+// ============================================
+// News 모델: 경제 뉴스 저장 테이블
+// ============================================
+model News {
+  // 기본 필드
+  id              Int     @id @default(autoincrement())
+  title           String
+  url             String  @unique  // 중복 방지 (필수)
+  date            DateTime
+  
+  // 뉴스 내용
+  summary         String  @db.Text
+  keyMetrics      String?
+  sourceUrl       String?
+  
+  // JSON 필드 제거됨 -> N:M 관계로 변경
+  // terms           Json?
+  
+  // 관계 정의
+  terms           NewsTerm[]
+  
+  // 타임스탬프
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  @@index([date])
+  @@index([createdAt])
+}
+
+// ============================================
+// Term 모델: 전역 경제 용어장
+// ============================================
+model Term {
+  id              Int     @id @default(autoincrement())
+  name            String  @unique  // 용어 이름 중복 불가 (전역 관리)
+  definition      String  @db.Text
+  explanation     String  @db.Text
+  
+  // 관계 정의
+  news            NewsTerm[]
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  @@index([name])
+}
+
+// ============================================
+// NewsTerm 모델: 뉴스-용어 연결 (다대다)
+// ============================================
+model NewsTerm {
+  newsId    Int
+  termId    Int
+  
+  news      News @relation(fields: [newsId], references: [id], onDelete: Cascade)
+  term      Term @relation(fields: [termId], references: [id], onDelete: Cascade)
+  
+  @@id([newsId, termId]) // 복합 키
+}
+
+// ============================================
+// User 모델: 사용자 정보
+// ============================================
+model User {
+  id        Int     @id @default(autoincrement())
+  email     String  @unique
+  password  String
+  name      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@index([email])
+}
