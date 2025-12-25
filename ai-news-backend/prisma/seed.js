@@ -50,7 +50,7 @@ async function main() {
             title: "삼성전자 3분기 영업이익 22조 원대 기대",
             url: "https://example.com/news/samsung-earnings-2025-q3",
             date: new Date("2025-12-07"),
-            summary: "삼성전자가 3분기 영업이익 22조 원대를 기록할 것으로 예상된다. 반도체 가격 상승과 AI 칩 수요 증가가 주요 요인이다.",
+            summary: "삼성전자가 올해 3분기에 무려 22조 원이 넘는 영업이익을 낼 것으로 기대되고 있어요. 이는 작년 같은 기간보다 30% 이상 늘어난 수치로, 주로 인공지능(AI)에 들어가는 고성능 반도체가 아주 잘 팔렸기 때문이라고 해요. 전문가들은 삼성전자가 앞으로도 반도체 시장에서 계속해서 큰 돈을 벌어들일 것이라고 긍정적으로 전망하고 있습니다.",
             keyMetrics: "영업이익 22조 원, 반도체 매출 +30%, AI 칩 수요 250% 증가",
             sourceUrl: "https://example.com/news/samsung-earnings-2025-q3",
             terms: {
@@ -59,8 +59,8 @@ async function main() {
                         term: {
                             create: {
                                 name: "영업이익(Operating Profit)",
-                                definition: "본업으로 버는 순수 이익",
-                                explanation: "회사가 물건을 팔아서 벌고, 생산 비용을 뺀 것."
+                                definition: "기업이 주된 사업 활동을 통해 벌어들인 이익.",
+                                explanation: "회사가 치킨집이라면, 치킨을 팔아서 번 돈에서 닭값, 기름값, 월세 같은 비용을 다 빼고 순수하게 남은 '장사 마진'을 말해요."
                             }
                         }
                     },
@@ -68,8 +68,8 @@ async function main() {
                         term: {
                             create: {
                                 name: "반도체(Semiconductor)",
-                                definition: "스마트폰, 컴퓨터 등의 핵심 부품",
-                                explanation: "전자 제품의 '뇌' 역할."
+                                definition: "도체와 부도체의 중간 성질을 가진 물질로, 전자 제품의 핵심 부품.",
+                                explanation: "스마트폰이나 컴퓨터가 생각하고 작동하게 만드는 '전자 두뇌'라고 보면 돼요. 이게 없으면 전자제품은 그냥 깡통이 됩니다."
                             }
                         }
                     }
@@ -83,7 +83,7 @@ async function main() {
             title: "한국 4분기 GDP 성장률 전망 상향",
             url: "https://example.com/news/korea-gdp-forecast-2025",
             date: new Date("2025-12-06"),
-            summary: "한국은행이 올해 4분기 GDP 성장률을 2.5%로 전망했다. 수출 호조와 정부 투자 확대가 견인할 것으로 예상된다.",
+            summary: "한국은행이 올해 4분기 우리나라 경제가 얼마나 성장할지 보여주는 GDP 성장률 전망치를 2.5%로 높여 잡았어요. 자동차와 반도체 수출이 생각보다 훨씬 잘 되고 있고, 정부에서도 돈을 풀어 투자를 늘리고 있기 때문인데요. 이대로라면 내년 경제도 예상보다 훨씬 튼튼하게 성장할 수 있을 것이라는 희망적인 분석이 나오고 있습니다.",
             keyMetrics: "GDP 성장률 2.5%, 수출 +5%, 정부 투자 확대",
             sourceUrl: "https://example.com/news/korea-gdp-forecast-2025",
             terms: {
@@ -92,8 +92,8 @@ async function main() {
                         term: {
                             create: {
                                 name: "GDP(국내총생산)",
-                                definition: "한 나라에서 1년간 생산된 모든 상품과 서비스의 총합",
-                                explanation: "국가 경제 규모를 측정하는 가장 중요한 지표."
+                                definition: "일정 기간 동안 한 나라 안에서 생산된 모든 재화와 서비스의 시장 가치 합계.",
+                                explanation: "우리나라 땅 안에서 어른, 아이, 외국인 할 것 없이 모두가 열심히 일해서 만들어낸 '전체 성적표' 같은 거예요. 이게 오르면 나라가 부자가 되고 있는 거죠."
                             }
                         }
                     }

@@ -13,7 +13,7 @@ const getModel = () => {
         throw new Error('GEMINI_API_KEY is missing in .env');
     }
     const genAI = new GoogleGenerativeAI(apiKey);
-    return genAI.getGenerativeModel({ model: "gemini-1.5-flash" }); // n8n은 PaLM일 수 있으나 최신 Flash 권장
+    return genAI.getGenerativeModel({ model: "gemini-2.5-flash" }); // Nano Banana has 0 quota, falling back to 2.5 Flash
 };
 
 /**

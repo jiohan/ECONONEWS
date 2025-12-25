@@ -4,6 +4,9 @@ const prisma = require('../config/database');
 const logger = require('../config/logger');
 const newsApiService = require('./newsApiService');
 const aiService = require('./aiService');
+const imageService = require('./imageService');
+
+
 
 /**
  * 일일 뉴스 브리핑 생성 프로세스 실행
@@ -37,6 +40,7 @@ const processDailyNews = async () => {
         // 4. Critic Agent로 정제
         const refinedResults = await aiService.refineAnalysis(analyzedResults);
 
+
         // 5. DB 저장
         const savedResults = [];
 
@@ -48,6 +52,21 @@ const processDailyNews = async () => {
             const finalUrl = newsData.url || item.source_url;
             const finalDate = newsData.date ? new Date(newsData.date) : new Date(item.date);
 
+            // 🖌️ 5-0. AI 이미지 생성 (추가됨)
+            let imagePath = null;
+            try {
+                logger.info('🎨 뉴스 이미지 생성 중...');
+                const imagePrompt = await imageService.generateImagePrompt(item.summary);
+                const imageBuffer = await imageService.generateImage(imagePrompt);
+                // 파일명: news_날짜_시간.jpg
+                const filename = `news_${Date.now()}.jpg`;
+                const savedFilename = imageService.saveImage(imageBuffer, filename);
+                imagePath = `uploads/${savedFilename}`;
+            } catch (imgError) {
+                logger.error(`⚠️ 이미지 생성 실패 (건너뜀): ${imgError.message}`);
+                // 이미지가 없어도 뉴스는 저장
+            }
+
             // 5-1. 뉴스 저장 (Upsert)
             const news = await prisma.news.upsert({
                 where: { url: finalUrl },
@@ -56,6 +75,7 @@ const processDailyNews = async () => {
                     summary: item.summary,
                     keyMetrics: item.key_metrics,
                     date: finalDate,
+                    ...(imagePath ? { imagePath } : {}), // 이미지가 생성되었을 때만 업데이트 (기존 이미지 보존)
                 },
                 create: {
                     title: finalTitle,
@@ -64,8 +84,10 @@ const processDailyNews = async () => {
                     keyMetrics: item.key_metrics,
                     sourceUrl: finalUrl,
                     date: finalDate,
+                    imagePath: imagePath, // 생성 시 이미지 경로 추가
                 }
             });
+
 
             // 5-2. Terms 처리 (Global Deduplication)
             if (item.terms && Array.isArray(item.terms)) {

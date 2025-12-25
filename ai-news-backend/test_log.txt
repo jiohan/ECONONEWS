@@ -1,0 +1,10 @@
+Testing models...
+Testing gemini-1.5-flash... ❌ Failed: 
+Testing gemini-1.5-flash-001... ❌ Failed: 
+Testing gemini-1.5-flash-002... ❌ Failed: 
+Testing gemini-1.5-pro... ❌ Failed: 
+Testing gemini-1.5-pro-001... ❌ Failed: 
+Testing gemini-1.5-pro-002... ❌ Failed: 
+Testing gemini-pro... ❌ Failed: 
+Testing gemini-pro-vision... ❌ Failed: 
+Testing gemini-1.0-pro... ❌ Failed: 

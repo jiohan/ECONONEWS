@@ -57,6 +57,11 @@ app.use((req, res, next) => {
     next();
 });
 
+// 정적 파일 제공 (이미지)
+const path = require('path');
+app.use('/uploads', express.static(path.join(__dirname, '../public/uploads')));
+
+
 // ============================================
 // 3️⃣ 헬스 체크 엔드포인트
 // ============================================

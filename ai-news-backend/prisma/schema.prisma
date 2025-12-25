@@ -25,6 +25,7 @@ model News {
   summary         String  @db.Text
   keyMetrics      String?
   sourceUrl       String?
+  imagePath       String? // 이미지 파일 경로 (로컬)
   
   // JSON 필드 제거됨 -> N:M 관계로 변경
   // terms           Json?

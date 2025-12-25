@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import api from '../services/api';
-import { NewsItem } from '../../types';
+import { NewsItem } from '../types';
 
 interface NewsResponse {
     success: boolean;
@@ -31,7 +31,9 @@ export const useNews = (page = 1) => {
                 source: item.sourceUrl || 'AI Summary',
                 timeAgo: new Date(item.date).toLocaleDateString(),
                 // Add random or placeholder image as backend doesn't support it yet
-                imageUrl: 'https://lh3.googleusercontent.com/aida-public/AB6AXuCjGUArigSIOcXoVjrk7PFT6acCJaXaHU_Bm2ixug_x-mxw4lSVgvGwCBjHRIR6r8x5r7jKL5HHQ5N08O0CMhF91E4T3-z5m2RyQgtIqhF5Qy-L9gvnKE3R3RvurfmRcqRiboijVCWCnaBvP-C3mOpV9_ZcpPdMKyJyfevjT2BldYzBL56OC4wVDekRlb8M8JTLqodB4SLkv9cV4Kh_ufb09pqWr33p86ioNDtqZNXCWo40doqEw1tdF3n79kUiu32NTxfEq4jS9L5T4',
+                // Use AI generated image if available, else placeholder
+                imageUrl: item.imagePath ? `/${item.imagePath}` : 'https://lh3.googleusercontent.com/aida-public/AB6AXuCjGUArigSIOcXoVjrk7PFT6acCJaXaHU_Bm2ixug_x-mxw4lSVgvGwCBjHRIR6r8x5r7jKL5HHQ5N08O0CMhF91E4T3-z5m2RyQgtIqhF5Qy-L9gvnKE3R3RvurfmRcqRiboijVCWCnaBvP-C3mOpV9_ZcpPdMKyJyfevjT2BldYzBL56OC4wVDekRlb8M8JTLqodB4SLkv9cV4Kh_ufb09pqWr33p86ioNDtqZNXCWo40doqEw1tdF3n79kUiu32NTxfEq4jS9L5T4',
+
                 tags: ['Economy'],
                 vocabulary: item.terms?.map((t: any) => ({
                     term: t.name,

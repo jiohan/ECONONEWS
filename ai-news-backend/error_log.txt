@@ -1,0 +1,19 @@
+🚀 Starting Full News Generation Process Demo...
+📰 Fetching latest news from NewsAPI...
+⚠️ NEWS_API_KEY not found in .env, using fallback key for demo.
+2025-12-19 14:42:59 [[32minfo[39m] 📰 NewsAPI에 경제 뉴스 요청 중...
+2025-12-19 14:43:00 [[32minfo[39m] ✅ NewsAPI: 20개의 기사 발견
+2025-12-19 14:43:00 [[32minfo[39m] 🎯 선택된 뉴스: 공허한 공약...국가전략산업 요건 갖춰도 K콘텐츠는 배제
+2025-12-19 14:43:00 [[32minfo[39m] 🕷️ Scraper: 원문 접속 시도 (https://zdnet.co.kr/view/?no=20251218123520)
+
+📄 Fetched Article: "공허한 공약...국가전략산업 요건 갖춰도 K콘텐츠는 배제"
+🔗 URL: https://zdnet.co.kr/view/?no=20251218123520
+📝 Content Length: 1788 chars
+
+🤖 Asking Gemini to analyze news content...
+2025-12-19 14:43:00 [[31merror[39m] ❌ Gemini 분석 실패: GEMINI_API_KEY is missing in .env
+❌ Process Failed: Error: GEMINI_API_KEY is missing in .env
+    at getModel (C:\Users\jioha\AI_NEWS\ai-news-backend\src\services\aiService.js:13:15)
+    at Object.analyzeNews (C:\Users\jioha\AI_NEWS\ai-news-backend\src\services\aiService.js:26:23)
+    at main (C:\Users\jioha\AI_NEWS\ai-news-backend\demo_process.js:33:42)
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
