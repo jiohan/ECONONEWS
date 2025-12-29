@@ -5,6 +5,11 @@ import VocabularyPage from './VocabularyPage';
 import { useNews } from '../hooks/useNews';
 import { VocabTerm } from '../types';
 
+import { useAuth } from '../context/AuthContext';
+import SettingsModal from './SettingsModal';
+import NewsDetailModal from './NewsDetailModal';
+import { NewsItem } from '../types';
+
 interface DashboardProps {
   onLogout: () => void;
 }
@@ -14,39 +19,85 @@ type Tab = 'dashboard' | 'vocabulary';
 const Dashboard: React.FC<DashboardProps> = ({ onLogout }) => {
   const [activeTab, setActiveTab] = useState<Tab>('dashboard');
   const [searchQuery, setSearchQuery] = useState('');
+  const [showSettings, setShowSettings] = useState(false);
+  const [selectedNews, setSelectedNews] = useState<NewsItem | null>(null);
+  const { user, logout } = useAuth(); // Removed unused 'user' if not needed, but keeping for now
+
+  // Notification State
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [hasUnread, setHasUnread] = useState(false);
+  const [latestNews, setLatestNews] = useState<NewsItem | null>(null);
 
   // Use React Query for news
   const { data: newsItems = [], isLoading: newsLoading } = useNews(1);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    console.log("Search not yet implemented in backend:", searchQuery);
   };
 
-  // Aggregate all terms from all news items
-  const allTerms = useMemo(() => {
+  // Check for new news
+  useEffect(() => {
+    if (newsItems.length > 0) {
+      const latest = newsItems[0];
+      setLatestNews(latest);
+
+      const lastCheck = localStorage.getItem('lastNotificationCheck');
+      if (lastCheck) {
+        const lastCheckDate = new Date(lastCheck);
+        const newsDate = new Date(latest.publishedAt || latest.crawledAt || Date.now());
+        if (newsDate > lastCheckDate) {
+          setHasUnread(true);
+        }
+      } else {
+        setHasUnread(true);
+      }
+    }
+  }, [newsItems]);
+
+  const handleNotificationClick = () => {
+    setShowNotifications(!showNotifications);
+    if (!showNotifications && hasUnread) {
+      setHasUnread(false);
+      localStorage.setItem('lastNotificationCheck', new Date().toISOString());
+    }
+  };
+
+
+  // Calculate filtered terms based on Search Query
+  const filteredTerms = useMemo(() => {
     const terms: VocabTerm[] = [];
     const seenIds = new Set();
+    const query = searchQuery.toLowerCase().trim();
 
     newsItems.forEach(item => {
       if (item.vocabulary) {
         item.vocabulary.forEach(term => {
-          // Ideally use a unique ID, but if client gen IDs are unstable, name might be key.
-          // Assuming term.id is stable or we dedupe by term name.
-          // Let's dedupe by term name for cleaner list
+          // Deduplicate and Filter
           if (!seenIds.has(term.term)) {
-            seenIds.add(term.term);
-            terms.push({
-              ...term,
-              // Ensure unique ID for list rendering if duplicates exist across news
-              id: term.id || `${term.term}-${Math.random()}`
-            });
+            // Search only by Term Name
+            if (term.term.toLowerCase().includes(query)) {
+              seenIds.add(term.term);
+              terms.push({
+                ...term,
+                id: term.id || `${term.term}-${Math.random()}`
+              });
+            }
           }
         });
       }
     });
     return terms;
-  }, [newsItems]);
+  }, [newsItems, searchQuery]);
+
+  // Calculate filtered news based on Search Query
+  const filteredNews = useMemo(() => {
+    const query = searchQuery.toLowerCase().trim();
+    if (!query) return newsItems;
+    return newsItems.filter(item =>
+      // Search only by Title
+      item.title.toLowerCase().includes(query)
+    );
+  }, [newsItems, searchQuery]);
 
   const loading = newsLoading;
 
@@ -101,13 +152,8 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout }) => {
               </div>
             </div>
 
-            <div className="p-4 rounded-xl bg-[#0891b2]/5 border border-[#0891b2]/10">
-              <p className="text-xs text-gray-500 mb-2">Pro Plan</p>
-              <div className="w-full bg-gray-200 rounded-full h-1.5 mb-2">
-                <div className="bg-[#0891b2] h-1.5 rounded-full" style={{ width: '75%' }}></div>
-              </div>
-              <p className="text-xs font-bold text-[#0891b2]">750 / 1000 credits</p>
-            </div>
+            {/* Widget Removed */}
+
           </div>
         </aside>
 
@@ -117,16 +163,48 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout }) => {
 
             {/* Header / Search */}
             <header className="flex flex-col md:flex-row items-center gap-4">
-              <div className="flex items-center gap-4 self-start md:self-auto order-1 md:order-none">
-                <button className="flex items-center justify-center rounded-full h-10 w-10 glass-card-light bg-white hover:bg-[#0891b2]/10 hover:text-[#0891b2] text-gray-600 transition-colors">
+              <div className="flex items-center gap-4 self-start md:self-auto order-1 md:order-none relative">
+                <button
+                  onClick={() => setShowSettings(true)}
+                  className="flex items-center justify-center rounded-full h-10 w-10 glass-card-light bg-white hover:bg-[#0891b2]/10 hover:text-[#0891b2] text-gray-600 transition-colors"
+                >
                   <span className="material-symbols-outlined">settings</span>
                 </button>
-                <button className="flex items-center justify-center rounded-full h-10 w-10 glass-card-light bg-white hover:bg-[#0891b2]/10 hover:text-[#0891b2] text-gray-600 transition-colors relative">
-                  <span className="material-symbols-outlined">notifications</span>
-                  <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full"></span>
-                </button>
+
+                {/* Notification Bell */}
+                <div className="relative">
+                  <button
+                    onClick={handleNotificationClick}
+                    className="flex items-center justify-center rounded-full h-10 w-10 glass-card-light bg-white hover:bg-[#0891b2]/10 hover:text-[#0891b2] text-gray-600 transition-colors relative"
+                  >
+                    <span className="material-symbols-outlined">notifications</span>
+                    {hasUnread && (
+                      <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full animate-pulse"></span>
+                    )}
+                  </button>
+
+                  {/* Notification Dropdown */}
+                  {showNotifications && (
+                    <div className="absolute top-full left-0 mt-2 w-80 bg-white rounded-xl shadow-xl border border-gray-100 p-4 z-50">
+                      <h4 className="font-bold text-gray-900 mb-2 text-sm">Notifications</h4>
+                      {latestNews ? (
+                        <div className="flex flex-col gap-1 cursor-pointer hover:bg-gray-50 p-2 rounded-lg transition-colors" onClick={() => setSelectedNews(latestNews)}>
+                          <div className="flex items-center justify-between">
+                            <span className="text-[10px] uppercase font-bold text-[#0891b2] bg-[#0891b2]/10 px-1.5 py-0.5 rounded">New Arrival</span>
+                            <span className="text-xs text-gray-400">{latestNews.timeAgo}</span>
+                          </div>
+                          <p className="text-sm font-semibold text-gray-800 line-clamp-2 leading-tight mt-1">{latestNews.title}</p>
+                          <p className="text-xs text-blue-500 mt-1 font-medium">Click to view analysis</p>
+                        </div>
+                      ) : (
+                        <p className="text-xs text-gray-500">No new updates.</p>
+                      )}
+                    </div>
+                  )}
+                </div>
+
                 <button
-                  onClick={onLogout}
+                  onClick={logout}
                   title="Log Out"
                   className="flex items-center justify-center rounded-full h-10 w-10 glass-card-light bg-white hover:bg-red-500/10 hover:text-red-500 text-gray-600 transition-colors"
                 >
@@ -159,7 +237,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout }) => {
                   {loading ? 'AI is analyzing news sources...' : 'Latest News Summaries'}
                 </h2>
 
-                <div className="flex flex-col gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 auto-rows-fr">
                   {loading ? (
                     // Skeleton Loading State
                     [1, 2, 3].map((i) => (
@@ -175,15 +253,19 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout }) => {
                       </div>
                     ))
                   ) : (
-                    newsItems.map(item => (
-                      <NewsCard key={item.id} item={item} />
+                    filteredNews.map(item => (
+                      <NewsCard
+                        key={item.id}
+                        item={item}
+                        onClick={(clickedItem) => setSelectedNews(clickedItem)}
+                      />
                     ))
                   )}
                 </div>
               </div>
             ) : (
               // Vocabulary View
-              <VocabularyPage terms={allTerms} isLoading={loading} />
+              <VocabularyPage terms={filteredTerms} isLoading={loading} />
             )}
 
           </div>
@@ -193,6 +275,8 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout }) => {
           </aside>
         </main>
       </div>
+      <SettingsModal isOpen={showSettings} onClose={() => setShowSettings(false)} />
+      <NewsDetailModal item={selectedNews} onClose={() => setSelectedNews(null)} />
     </div>
   );
 };

@@ -12,6 +12,9 @@ const { validateNewsInput } = require('./middleware/validation');
 // AI News Backend Phase 4: Import Service & Cron
 const cron = require('node-cron');
 const newsService = require('./services/newsService');
+const session = require('express-session');
+const passport = require('./config/passport');
+const authRoutes = require('./routes/authRoutes');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -56,6 +59,24 @@ app.use((req, res, next) => {
     logger.info(`${req.method} ${req.path}`);
     next();
 });
+
+
+// Session Setup
+app.use(session({
+    secret: process.env.SESSION_SECRET || 'keyboard cat',
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+        secure: process.env.NODE_ENV === 'production',
+        maxAge: 24 * 60 * 60 * 1000
+    }
+}));
+
+// Passport Config
+app.use(passport.initialize());
+app.use(passport.session());
+
+app.use('/api/auth', authRoutes);
 
 // 정적 파일 제공 (이미지)
 const path = require('path');

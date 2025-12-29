@@ -59,15 +59,23 @@ const VocabularyPage: React.FC<VocabularyPageProps> = ({ terms, isLoading }) => 
                     return (
                         <div
                             key={`${term.id}-${index}`}
-                            onClick={() => toggleTerm(term.term)}
-                            className={`glass-card-light p-5 rounded-xl border border-transparent hover:border-[#0891b2]/30 transition-all cursor-pointer group ${isExpanded ? 'ring-2 ring-[#0891b2]/10 bg-white' : 'hover:bg-white/60'}`}
+                            onClick={() => {
+                                if (!isExpanded) toggleTerm(term.term);
+                            }}
+                            className={`glass-card-light p-5 rounded-xl border border-transparent hover:border-[#0891b2]/30 transition-all cursor-pointer group h-full flex flex-col ${isExpanded ? 'ring-2 ring-[#0891b2]/10 bg-white' : 'hover:bg-white/60'}`}
                         >
                             <div className="flex justify-between items-center">
                                 <h3 className={`text-lg font-bold transition-colors ${isExpanded ? 'text-[#0891b2]' : 'text-gray-800'}`}>
                                     {term.term}
                                 </h3>
-                                <div className={`text-gray-400 transition-transform duration-300 ${isExpanded ? 'rotate-180 text-[#0891b2]' : ''}`}>
-                                    <span className="material-symbols-outlined">expand_more</span>
+                                <div
+                                    className={`text-gray-400 transition-transform duration-300 ${isExpanded ? 'rotate-180 text-[#0891b2]' : ''}`}
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        toggleTerm(term.term);
+                                    }}
+                                >
+                                    <span className="material-symbols-outlined hover:bg-gray-100 rounded-full p-1 transition-colors">expand_more</span>
                                 </div>
                             </div>
 

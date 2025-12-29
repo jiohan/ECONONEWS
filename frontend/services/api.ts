@@ -2,9 +2,9 @@ import axios from 'axios';
 
 // Create an Axios instance with default config
 const api = axios.create({
-    // Since we set up the proxy in vite.config.ts, we can just use /api
-    // In production, Nginx or similar will handle this, or we set a full URL
-    baseURL: import.meta.env.VITE_API_URL || '/api',
+    // Direct backend connection to ensure cookies (port 3000) are sent correctly
+    baseURL: 'http://localhost:3000/api',
+    withCredentials: true, // Crucial for sending cookies cross-port
     timeout: 10000,
     headers: {
         'Content-Type': 'application/json',

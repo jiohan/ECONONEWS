@@ -5,16 +5,33 @@ import Dashboard from './components/Dashboard';
 
 const queryClient = new QueryClient();
 
-const App: React.FC = () => {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+import { AuthProvider, useAuth } from './context/AuthContext';
 
+const AppContent: React.FC = () => {
+  const { user, login, logout, isLoading } = useAuth();
+  // We can keep local state for "demo" login if needed, or rely solely on auth context.
+  // The original code had local state. Let's merge them.
+  // Actually, if user logs in via Google, `user` object is present.
+  // If user clicks "Log In" (demo), we can still support that or replace it.
+  // For now, let's wire Google Login.
+
+  if (isLoading) {
+    return <div className="min-h-screen bg-[#101622] flex items-center justify-center text-white">Loading...</div>;
+  }
+
+  return user ? (
+    <Dashboard onLogout={logout} />
+  ) : (
+    <LandingPage onLogin={login} onGoogleLogin={login} />
+  );
+};
+
+const App: React.FC = () => {
   return (
     <QueryClientProvider client={queryClient}>
-      {isAuthenticated ? (
-        <Dashboard onLogout={() => setIsAuthenticated(false)} />
-      ) : (
-        <LandingPage onLogin={() => setIsAuthenticated(true)} />
-      )}
+      <AuthProvider>
+        <AppContent />
+      </AuthProvider>
     </QueryClientProvider>
   );
 };
