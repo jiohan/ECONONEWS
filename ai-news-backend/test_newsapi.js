@@ -1,5 +1,5 @@
-const axios = require('axios');
-const apiKey = '9028e5e51618486d9169da005477883b';
+require('dotenv').config();
+const apiKey = process.env.NEWS_API_KEY;
 const url = 'https://newsapi.org/v2/everything?q=경제&language=ko&sortBy=publishedAt&apiKey=' + apiKey;
 
 console.log('Testing NewsAPI...');

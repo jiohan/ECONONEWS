@@ -14,8 +14,8 @@ async function main() {
 
         // Fallback for NewsAPI Key if .env fails
         if (!process.env.NEWS_API_KEY) {
-            console.warn("⚠️ NEWS_API_KEY not found in .env, using fallback key for demo.");
-            process.env.NEWS_API_KEY = '9028e5e51618486d9169da005477883b';
+            console.warn("⚠️ NEWS_API_KEY not found in .env.");
+            // process.env.NEWS_API_KEY = '...'; // Removed for security
         }
 
         // We can pass excluded titles if we wanted to avoid redundancy, but for demo we pass empty array

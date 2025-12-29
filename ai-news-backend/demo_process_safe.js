@@ -17,8 +17,7 @@ async function main() {
 
     try {
         if (!process.env.NEWS_API_KEY) {
-            log("⚠️ NEWS_API_KEY not found in .env, using fallback key for demo.");
-            process.env.NEWS_API_KEY = '9028e5e51618486d9169da005477883b';
+            log("⚠️ NEWS_API_KEY not found in .env.");
         }
 
         // Check Google Key
